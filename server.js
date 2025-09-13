@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); 
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -21,18 +21,23 @@ mongoose.connect(process.env.MONGO_URI, {
 }).then(() => console.log('MongoDB Connected'))
   .catch(err => console.log(err));
 
-// GET current rate
-app.get('/rate', async (req, res) => {
-    const latest = await Rate.findOne().sort({ updatedAt: -1 });
-    if (!latest) return res.status(404).json({ error: 'Rate not found' });
+// ✅ GET current rate at /api/rates
+app.get('/api/rates', async (req, res) => {
+    try {
+        const latest = await Rate.findOne().sort({ updatedAt: -1 });
+        if (!latest) return res.status(404).json({ error: 'Rate not found' });
 
-    res.json({
-        rate: latest.value,
-        last_updated: latest.updatedAt
-    });
+        res.json({
+            rate: latest.value,
+            last_updated: latest.updatedAt
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
-// Secret UPDATE endpoint (use /update?value=1450&key=1234)
+// ✅ Secret UPDATE endpoint (use /update?value=1450&key=1234)
 app.get('/update', async (req, res) => {
     const { value, key } = req.query;
 
@@ -40,17 +45,23 @@ app.get('/update', async (req, res) => {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    const newRate = new Rate({ value });
-    await newRate.save();
+    try {
+        const newRate = new Rate({ value });
+        await newRate.save();
 
-    res.json({ message: 'Rate updated!', rate: value });
+        res.json({ message: 'Rate updated!', rate: value });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
-// Home
+// Home route
 app.get('/', (req, res) => {
     res.send('NairaFixer API is running...');
 });
 
+// Start server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
